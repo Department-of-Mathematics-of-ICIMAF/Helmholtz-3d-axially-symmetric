@@ -1,5 +1,5 @@
 %mainHelmholtzMultipatch_3Daxial
-% VHM marzo 2026
+% VHM marzo 2026 / octubre 2026 (integracion de evaluaQ)
 % programa para resolver la ecuacion de Helmholtz en un dominio 3D con 
 % simetria axial, lente curva y k constante.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -19,16 +19,32 @@ rl=sqrt(a^2+zc^2);
 aten = 8.55;
 kval=2*pi*fr/c-1i*aten;
 C=4.0e5;
-%C=1;
+% C=1;
+
+% Densidad del tejido (constante en todo el dominio). Valor tipico para
+% tejido phantom / musculo. Modifiquelo segun el tejido que se este
+% simulando (agua: rho=1000, piel: 1200, grasa: 950, musculo: 1050).
+rho = 1044;
+
+% En el modelo con k CONSTANTE las magnitudes c, alpha y rho son valores
+% constantes en todo el dominio. Estos valores se pasan a
+% radiationmatricesHelmholtz_3Daxial y de ahi a evaluaQ para calcular
+%   Q = alpha * |u|^2 / (rho * c)
+% a partir de la solucion aproximada u de la ecuacion de Helmholtz.
+c_const     = c;       % velocidad de propagacion del ultrasonido (m/s)
+alpha_const = aten;    % coeficiente de atenuacion (Np/m)
+rho_const   = rho;     % densidad del tejido (kg/m^3)
+
 fprintf('Wave number k=%e\n',kval);
 fprintf('r=%e\n',r);
+fprintf('Velocidad c=%g, Atenuacion alpha=%g, Densidad rho=%g\n', c_const, alpha_const, rho_const);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calcular la parametrizacion Multiparche del dominio con 3 parches 
 
 alpha = 0.7698;
 Q = [0.0217,0.0385];
-% Parametrizacion Multiparche VHM con nodos simples
+% Parametrizacion Multipatch VHM con nodos simples
 [geometry,boundaries,interfaces,boundary_interfaces]=ParametMultipatch_mediodominio(r,a,rl,alpha,Q,zc);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,7 +71,7 @@ Ndof = space.ndof
 % Aexacta=pi*r^2/4+beta*rl^2/2-a*zc/2;
 % fprintf('Area exacta de Omega=%5e\n', Aexacta);
 
-u=radiationmatricesHelmholtz_3Daxial(space,msh,kval,C,r,alpha);
+u=radiationmatricesHelmholtz_3Daxial(geometry,space,msh,kval,C,r,alpha,c_const,alpha_const,rho_const);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('Postprocesamiento grafico\n')
@@ -128,7 +144,7 @@ sol1 = abs(up1);
 sol2 = abs(up2);
 sol3 = abs(up3);
 
-% Encontrar mínimo y máximo globales
+% Encontrar mnimo y mximo globales
 min_global = min([sol1(:); sol2(:); sol3(:)]);
 max_global = max([sol1(:); sol2(:); sol3(:)]);
 global_clim = [min_global, max_global];
@@ -146,31 +162,15 @@ title('abs(u_h)');
 hold(ax, 'on');
 
 ang = (3/2)*pi;
-% Agregar cada sólido con la escala global
+% Agregar cada slido con la escala global
 crear_solido_revolucion2(ax, Rhop1, Zp1, sol1,ang, global_clim);
 crear_solido_revolucion2(ax, Rhop2, Zp2, sol2,ang, global_clim);
 crear_solido_revolucion2(ax, Rhop3, Zp3, sol3,ang, global_clim);
 
-% Mejorar iluminación (opcional)
+% Mejorar iluminacin (opcional)
 camlight(ax, 'left');
 lighting(ax, 'gouraud');
 material(ax, 'dull');
 
-% Agregar barra de colores (usará la escala global automáticamente)
+% Agregar barra de colores (usar la escala global automticamente)
 colorbar(ax);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

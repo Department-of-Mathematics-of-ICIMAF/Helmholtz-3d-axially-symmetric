@@ -1,4 +1,4 @@
-function[u]=radiationmatricesHelmholtz_3Daxial(space,msh,kval,C,r,alpha)
+function[u]=radiationmatricesHelmholtz_3Daxial(geometry,space,msh,kval,C,r,alpha,c_const,alpha_const,rho_const)
 % Esta funcion calcula las matrices de masa y rigidez para el problema de 
 % Helmholtz en un dominio 3D con simetria axial. Ademas calcula la matriz
 % A y el lado derecho b del sistema lineal, cuya solucion son los
@@ -6,17 +6,28 @@ function[u]=radiationmatricesHelmholtz_3Daxial(space,msh,kval,C,r,alpha)
 % de la solucion aproximada de la ecuacion de Helmholtz.
 %
 % Entrada
-% space - objecto que representa el espacio multipatch al que petenece la solucion aproximada 
-% msh- malla multipatch
-% kval- numero de onda
-% C - constante de Dirichlet
-% r- radio del dominio 
-% alpha- algulo que define la parametrizacion. En particular (r*cos(alpha),r*sin(alpha))
-%        es el punto sobre la frontera que divide el segmento de arco de
-%        circulo del parche y del parche 3
+% geometry - estructura que describe el mapeo multipatch, parametro de
+%            salida de mp_geo_load
+% space    - objeto que representa el espacio multipatch al que pertenece
+%            la solucion aproximada
+% msh      - malla multipatch
+% kval     - numero de onda (constante en todo el dominio)
+% C        - constante de Dirichlet
+% r        - radio del dominio
+% alpha    - angulo que define la parametrizacion. En particular
+%            (r*cos(alpha), r*sin(alpha)) es el punto sobre la frontera que
+%            divide el segmento de arco de circulo del parche 2 y del parche 3
+% c_const     - (OPCIONAL) valor constante de la velocidad de propagacion c
+%               del ultrasonido en todo el dominio (m/s). Necesario para
+%               evaluar Q.
+% alpha_const - (OPCIONAL) valor constante del coeficiente de atenuacion
+%               alpha en todo el dominio (Np/m). Necesario para evaluar Q.
+% rho_const   - (OPCIONAL) valor constante de la densidad rho del tejido en
+%               todo el dominio (kg/m^3). Necesario para evaluar Q.
+%
 % Salida
-% u-coeficientes en la base B-spline (multipatch y producto tensorial bicubica)
-% de la solucion aproximada de la ecuacion de Helmholtz.
+% u - coeficientes en la base B-spline (multipatch y producto tensorial
+%     bicubica) de la solucion aproximada de la ecuacion de Helmholtz.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,7 +112,7 @@ u(dofs_dirich2) = C;
 % Lado derecho (cero en este problema)
 rhs = zeros(Ndof, 1);
 
-% Ajustar lado derecho por condición de Dirichlet
+% Ajustar lado derecho por condicion de Dirichlet
 int_dofs = setdiff (1:space.ndof, dofs_dirich2);
 rhs(int_dofs) = rhs(int_dofs) - mat(int_dofs, dofs_dirich2) * u(dofs_dirich2)';
 
@@ -114,4 +125,21 @@ time = toc;
 fprintf('Tiempo para resolver el sistema: %.3f segundos\n', time)
 fprintf('-----------------------------------------------------------------\n')
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Calculo de Q = alpha * |u|^2 / (rho * c)
+% Solo se realiza si se han proporcionado los parametros constantes
+% c_const, alpha_const y rho_const. Si no se proporcionan, se omite el
+% calculo de Q (la funcion u ya esta calculada y se devuelve normalmente).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if nargin >= 8 && ~isempty(c_const) && ~isempty(alpha_const) && ~isempty(rho_const)
+    [XYQ] = evaluaQ(u, space, geometry, c_const, alpha_const, rho_const);
+    filename = input('diga el nombre del fichero de valores de Q\n', 's');
+    if ~isempty(filename)
+        save(filename, 'XYQ');
+    end
+else
+    fprintf('No se calcularon valores de Q: faltan c_const, alpha_const o rho_const.\n');
+    fprintf('Para activar el calculo de Q, llame a radiationmatricesHelmholtz_3Daxial\n');
+    fprintf('con los tres argumentos adicionales (c_const, alpha_const, rho_const).\n');
+end
 %fprintf('Aqui')
