@@ -49,6 +49,7 @@ mass_mat = op_u_v_mp (space,space, msh, frho);
 mat = stiff_mat -kval^2* mass_mat;  % mass_mat ya incluye el signo negativo y k^2
 
 Ndof = size(mat,1);
+fprintf('Cantidad de grados de libertad: %.3f \n', Ndof)
 % Las fronteras de cada parche se numeran localmente en el orden:
 % frontera 1 = Oeste
 % frontera 2 = Este
@@ -89,7 +90,8 @@ robin5_mat= op_u_v_tp(space.sp_patch{3}.boundary(2), space.sp_patch{3}.boundary(
 % Agregar contribucion de Robin: i * k * (matriz de masa en frontera)
 mat(dofs_robin4, dofs_robin4) = mat(dofs_robin4, dofs_robin4) + 1i * kval * robin4_mat;
 mat(dofs_robin5, dofs_robin5) = mat(dofs_robin5, dofs_robin5) + 1i * kval * robin5_mat;
-toc
+time = toc;
+fprintf('Tiempo para armar las matrices: %.3f segundos\n', time)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -106,7 +108,10 @@ rhs(int_dofs) = rhs(int_dofs) - mat(int_dofs, dofs_dirich2) * u(dofs_dirich2)';
 fprintf('-----------------------------------------------------------------\n')
 fprintf('Resolviendo el sistema de ecuaciones lineales\n')
 % Resolver sistema para grados de libertad interiores
+tic
 u(int_dofs) = mat(int_dofs, int_dofs) \ rhs(int_dofs);
+time = toc;
+fprintf('Tiempo para resolver el sistema: %.3f segundos\n', time)
 fprintf('-----------------------------------------------------------------\n')
 
 %fprintf('Aqui')

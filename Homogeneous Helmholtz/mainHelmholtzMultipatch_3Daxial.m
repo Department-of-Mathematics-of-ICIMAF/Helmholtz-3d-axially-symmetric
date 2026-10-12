@@ -11,13 +11,15 @@ fprintf('-----------------------------------------------------------------------
 % Datos del problema
 r=0.133;
 a=0.01;
-c=1500;
+c=1568;
 fr=1e6;
 %zc=input('zc=');
 zc=r/2;
 rl=sqrt(a^2+zc^2);
-kval=2*pi*fr/c;
-C=5.0e5;
+aten = 8.55;
+kval=2*pi*fr/c-1i*aten;
+C=4.0e5;
+%C=1;
 fprintf('Wave number k=%e\n',kval);
 fprintf('r=%e\n',r);
 
@@ -34,7 +36,9 @@ Q = [0.0217,0.0385];
 % 
 %n1=40;m1=24;n3=20;
 %n1=80;m1=48;n3=40;
-n1=100; m1=300;  n3=400; % N=308502 
+n1=100; % N=308502 
+m1 = n1*3;
+n3 = n1*4; 
 %n1=50; m1=500;  n3=500; 
 fprintf('-----------------------------------------------------------------\n')
 fprintf('La dimension del espacio de aproximacion se calcula en terminos de\n')
@@ -81,7 +85,79 @@ plot(Zp1,abs(up1),'LineWidth',2,'MarkerSize',6),grid on
 plot(Zp2,abs(up2),'LineWidth',2,'MarkerSize',6),grid on
 title ('Valor absoluto de la solucion de Helmholtz sobre el eje z')
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Z = [Zp1', Zp2'];
+up = [abs(up1), abs(up2)];
+
+ind = ultimo_maximo_local(up);
+last_max = [Z(ind) up(ind)];
+
+figure(600), hold on
+plot(last_max(1),last_max(2),'ko','MarkerSize',10),hold on
+
+ind_vector = ind-10:ind-1;
+plot(Z(ind_vector), up(ind_vector), 'o', 'Color', 'green', 'MarkerFaceColor', 'green'), hold on
+
+ind_vector = ind+1:ind+10;
+plot(Z(ind_vector), up(ind_vector), 'o', 'Color', 'green', 'MarkerFaceColor', 'green')
+
+fprintf('Ultimo maximo local: (%e,  %e)\n',last_max(1), last_max(2))
+fprintf('Indice: %e\n',ind)
 saveas(gcf,'multi.fig')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Rotacion
+npoints=100;
+pts=linspace(0, 1, npoints);
+pts = {pts, pts};
+
+[up1, Fzp1] = sp_eval (u(space.gnum{1}), space.sp_patch{1}, geometry(1), pts);
+Rhop1=deal (squeeze(Fzp1(1,:,:)));
+Zp1=deal (squeeze(Fzp1(2,:,:)));
+
+[up2, Fzp2] = sp_eval (u(space.gnum{2}), space.sp_patch{2}, geometry(2), pts);
+Rhop2=deal (squeeze(Fzp2(1,:,:)));
+Zp2=deal (squeeze(Fzp2(2,:,:)));
+
+[up3, Fzp3] = sp_eval (u(space.gnum{3}), space.sp_patch{3}, geometry(3), pts);
+Rhop3=deal (squeeze(Fzp3(1,:,:)));
+Zp3=deal (squeeze(Fzp3(2,:,:)));
+
+sol1 = abs(up1);
+sol2 = abs(up2);
+sol3 = abs(up3);
+
+% Encontrar mínimo y máximo globales
+min_global = min([sol1(:); sol2(:); sol3(:)]);
+max_global = max([sol1(:); sol2(:); sol3(:)]);
+global_clim = [min_global, max_global];
+
+% Crear figura y ejes
+figure();
+ax = axes;
+view(3);
+axis equal;
+grid on;
+xlabel('X');
+ylabel('Y');
+zlabel('Z');
+title('abs(u_h)');
+hold(ax, 'on');
+
+ang = (3/2)*pi;
+% Agregar cada sólido con la escala global
+crear_solido_revolucion2(ax, Rhop1, Zp1, sol1,ang, global_clim);
+crear_solido_revolucion2(ax, Rhop2, Zp2, sol2,ang, global_clim);
+crear_solido_revolucion2(ax, Rhop3, Zp3, sol3,ang, global_clim);
+
+% Mejorar iluminación (opcional)
+camlight(ax, 'left');
+lighting(ax, 'gouraud');
+material(ax, 'dull');
+
+% Agregar barra de colores (usará la escala global automáticamente)
+colorbar(ax);
 
 
 

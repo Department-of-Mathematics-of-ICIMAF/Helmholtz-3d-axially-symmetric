@@ -174,5 +174,3 @@ norminfJac = max([norminfJac_t, norminfJac_b, norminfJac_r]);
 Fmap = [Fmap_b, Fmap_t, Fmap_r];
 %geometry = [geometry_b, geometry_t, geometry_r];
 [geometry, boundaries,interfaces,~,boundary_interfaces]= mp_geo_load(Fmap);
-
-fprintf('Aqui')

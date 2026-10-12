@@ -48,7 +48,7 @@ Q = [0.0217,0.0385];
 %n1=40;m1=24;n3=20;
 %n1=80;m1=48;n3=40;
 %n1=100; m1=300;  n3=400; % N=189201
-n1 = 150; 
+n1 = 15; 
 m1 = 3*n1;
 n3 = 4*n1;
 %n1=200; m1=600;  n3=800; % N=758401
@@ -80,6 +80,7 @@ pts = {0, zp};
 % Evaluar los 2 parches de la solucion aproximada a lo largo del eje z
 [up1, Fzp1] = sp_eval (u(space.gnum{1}), space.sp_patch{1}, geometry(1), pts);
 Zp1=deal (squeeze(Fzp1(2,:,:)));
+
 [up2, Fzp2] = sp_eval (u(space.gnum{2}), space.sp_patch{2}, geometry(2), pts);
 Zp2=deal (squeeze(Fzp2(2,:,:)));
 
@@ -98,7 +99,61 @@ plot(Zp1,abs(up1),'LineWidth',2,'MarkerSize',6),grid on
 plot(Zp2,abs(up2),'LineWidth',2,'MarkerSize',6),grid on
 title ('Valor absoluto de la solucion de Helmholtz sobre el eje z')
 
-saveas(gcf,'multi.fig')
+%saveas(gcf,'multi.fig')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Rotacion
+npoints=100;
+pts=linspace(0, 1, npoints);
+pts = {pts, pts};
+
+[up1, Fzp1] = sp_eval (u(space.gnum{1}), space.sp_patch{1}, geometry(1), pts);
+Rhop1=deal (squeeze(Fzp1(1,:,:)));
+Zp1=deal (squeeze(Fzp1(2,:,:)));
+
+[up2, Fzp2] = sp_eval (u(space.gnum{2}), space.sp_patch{2}, geometry(2), pts);
+Rhop2=deal (squeeze(Fzp2(1,:,:)));
+Zp2=deal (squeeze(Fzp2(2,:,:)));
+
+[up3, Fzp3] = sp_eval (u(space.gnum{3}), space.sp_patch{3}, geometry(3), pts);
+Rhop3=deal (squeeze(Fzp3(1,:,:)));
+Zp3=deal (squeeze(Fzp3(2,:,:)));
+
+sol1 = abs(up1);
+sol2 = abs(up2);
+sol3 = abs(up3);
+
+% Encontrar mínimo y máximo globales
+min_global = min([sol1(:); sol2(:); sol3(:)]);
+max_global = max([sol1(:); sol2(:); sol3(:)]);
+global_clim = [min_global, max_global];
+
+% Crear figura y ejes
+figure();
+ax = axes;
+view(3);
+axis equal;
+grid on;
+xlabel('X');
+ylabel('Y');
+zlabel('Z');
+title('abs(u_h)');
+hold(ax, 'on');
+
+ang = (3/2)*pi;
+% Agregar cada sólido con la escala global
+crear_solido_revolucion2(ax, Rhop1, Zp1, sol1,ang, global_clim);
+crear_solido_revolucion2(ax, Rhop2, Zp2, sol2,ang, global_clim);
+crear_solido_revolucion2(ax, Rhop3, Zp3, sol3,ang, global_clim);
+
+% Mejorar iluminación (opcional)
+camlight(ax, 'left');
+lighting(ax, 'gouraud');
+material(ax, 'dull');
+
+% Agregar barra de colores (usará la escala global automáticamente)
+colorbar(ax);
+
 
 
 
