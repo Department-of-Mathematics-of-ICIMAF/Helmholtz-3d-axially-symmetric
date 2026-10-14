@@ -52,8 +52,7 @@ clear all;
 addpath(genpath('./utils'));
 
 theta = 3*pi/2;  % angulo de rotacion del solido
-show_figure = 0; % 1 (true) or 0 (false) para mostrar los graficos de los resultados
-% save_result = 0; % 1 (true) or 0 (false) para guardar los resultados en un txt
+show_figure = 1; % 1 (true) or 0 (false) para mostrar los graficos de los resultados
 
 fprintf('------------------------------------------------------------------\n')
 fprintf('Solucion IgA de la ecuacion de Pennes en un problema\n')
@@ -80,11 +79,6 @@ zmin = z_c - rl; % Para la lente
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Construir el espacio spline al que pertenece la solucion 
 fprintf('------------------------------------------------------------------\n')
-% n1=4;m1=2;n3=2;
-% n1=20;m1=12;n3=10;
-% n1=40;m1=24;n3=20;
-% n1=60;m1=48;n3=40;
-% n1 = 4;
 n1 = 50;
 m1=3*n1; n3=4*n1;
 
@@ -130,18 +124,16 @@ K_d = K(free_dofs, drchlt_dofs);
 %% Calculo de la condicion inicial
 T_b = 35;
 T_0 = @(rho,z) T_b;
-% alpha_0_inicial = condinicial(space, msh, free_dofs, M_0,T_0);
+
 alpha_0_inicial = T_b*ones(length(free_dofs),1);
 n_d=length(drchlt_dofs);
 alpha_d = T_b*ones(n_d,1);
 %% Calculo del vector del lado derecho
 
-% filenameQ=input('diga el nombre del fichero de valores de Q\n','s');
-% filenameQ='QNdof189201_tejidophantom8p58.mat';
-filenameQ='Q_Dof189201_phantom_F1MHZ_C4e5.mat';
+filenameQ=input('diga el nombre del fichero de valores de Q\n','s');
 filename = sprintf('inputs//%s', filenameQ);
 load(filename,'XYQ');
-% lambda2 = 0.25*10^8;  % 0.25*10^8 factor para ajusatr temperatura alrededor de 50? en un tejido Phantom
+
 lambda2 = 1;
 Qval = scatteredInterpolant(XYQ(:,1),XYQ(:,2),lambda2*XYQ(:,3),'nearest');
 
@@ -154,19 +146,15 @@ ATol = 1.0e-12; %valor por defecto
 RTol = 1.0e-10; %valor por defecto
 opts = odeset('RelTol',RTol,'AbsTol',ATol,'Mass',M_0,'Jacobian',-K_0);
 
-% fprintf('El problema se resuelve en [0,tf]\n')
-% tf=input('tf=');
-tf = 48;
-fprintf('El problema se resuelve en [0, %e]\n', tf)
+fprintf('El problema se resuelve en [0,tf]\n')
+tf=input('tf=');
 
-tstop=30;
-fprintf('La intensidad se detienen a los %i s\n',tstop)
+fprintf('Diga en que segundo se detiene la intensidad\n')
+tstop=input('tstop=');
 
 t_in = 0;
 N= 100;
 step = (tf- t_in)/N;
-% tspan = 0:step:tf;
-% tspan = [0 tf];
 
 tic;
 solver_name = 'ode23t';
@@ -179,7 +167,7 @@ solver_name = 'ode23t';
 % [tiempo,alphaI0,S]= ode45(@(t, alpha_0) eval_lado_derecho(t, alpha_0, tstop, K_0, K_d, alpha_d, q),0:step:tf, alpha_0_inicial, opts);
 
 % solver_name = 'ode15s';
-% [tiempo,alphaI0,S]= ode15s(@(t, alpha_0) eval_lado_derecho(t, alpha_0, tstop, K_0, K_d, alpha_d, q),tspan, alpha_0_inicial, opts);
+% [tiempo,alphaI0,S]= ode15s(@(t, alpha_0) eval_lado_derecho(t, alpha_0, tstop, K_0, K_d, alpha_d, q),0:step:tf, alpha_0_inicial, opts);
 
 % solver_name = 'ode23';
 % [tiempo,alphaI0,S]= ode23(@(t, alpha_0) eval_lado_derecho(t, alpha_0, tstop, K_0, K_d, alpha_d, q),0:step:tf, alpha_0_inicial, opts);
@@ -210,78 +198,67 @@ alpha(1:Nt, drchlt_dofs) = T_b*ones(Nt,n_d);
 
 
 
-if show_figure == 0
+if show_figure == 1
     
     %% Graficos de la Solucion a lo largo del eje Z
-%     npoints=800;
-%     z_p = linspace(0,1, npoints);
-%     ptsejez = {0, z_p};
-% %     max_value_g = 0;
-% % 
-%     t_5 = 5;
-%     [~,j_t_5]=min(abs(tiempo-t_5));
-%     [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_t_5,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
-%     Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
-%     [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_t_5,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
-%     Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
-%     Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
-%     Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
-%     figure(500),grid on, hold on
-%     plot(Z_tstop,Tempejez_tstop,'-m','LineWidth',2,'MarkerSize',6),grid on
-% %     max_value_g = max(max(Tempejez_tstop), max_value_g);
-% %     
-%     t_10 = 10;
-%     [~,j_t_10]=min(abs(tiempo-t_10));
-%     [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_t_10,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
-%     Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
-%     [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_t_10,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
-%     Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
-%     Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
-%     Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
-%     plot(Z_tstop,Tempejez_tstop,'-k','LineWidth',2,'MarkerSize',6),grid on
-% %     max_value_g = max(max(Tempejez_tstop), max_value_g);
-% % 
-%     t_15 = 15;
-%     [~,j_t_15]=min(abs(tiempo-t_15));
-%     [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_t_15,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
-%     Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
-%     [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_t_15,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
-%     Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
-%     Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
-%     Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
-%     plot(Z_tstop,Tempejez_tstop,'-r','LineWidth',2,'MarkerSize',6),grid on
-% %     max_value_g = max(max(Tempejez_tstop), max_value_g);
-% % 
-%     t_25 = 25;
-%     [~,j_t_25]=min(abs(tiempo-t_25));
-%     [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_t_25,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
-%     Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
-%     [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_t_25,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
-%     Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
-%     Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
-%     Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
-%     plot(Z_tstop,Tempejez_tstop,'-g','LineWidth',2,'MarkerSize',6),grid on
-% %     max_value_g = max(max(Tempejez_tstop), max_value_g);
-% % 
-% % 
-%     [~,j_tstop]=min(abs(tiempo-tstop));
-%     [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_tstop,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
-%     Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
-%     [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_tstop,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
-%     Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
-%     Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
-%     Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
-%     plot(Z_tstop,Tempejez_tstop,'-b','LineWidth',2,'MarkerSize',6),grid on
-% %     max_value_g = max(max(Tempejez_tstop), max_value_g)
-% % 
-% %     plot([z1,z1],[35,max_value_g],'--c','LineWidth',2)
-% %     plot([z2,z2],[35,max_value_g],'--c','LineWidth',2)
-% % 
-%     legend('t=5seg', 't=10seg', 't=15seg', 't=25seg', 't=30seg')
-% % 
-%     hold off
+    npoints=800;
+    z_p = linspace(0,1, npoints);
+    ptsejez = {0, z_p};
+ 
+    t_5 = 5;
+    [~,j_t_5]=min(abs(tiempo-t_5));
+    [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_t_5,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
+    Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
+    [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_t_5,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
+    Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
+    Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
+    Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
+    figure(500),grid on, hold on
+    plot(Z_tstop,Tempejez_tstop,'-m','LineWidth',2,'MarkerSize',6),grid on
+
+    t_10 = 10;
+    [~,j_t_10]=min(abs(tiempo-t_10));
+    [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_t_10,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
+    Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
+    [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_t_10,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
+    Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
+    Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
+    Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
+    plot(Z_tstop,Tempejez_tstop,'-k','LineWidth',2,'MarkerSize',6),grid on
+
+    t_15 = 15;
+    [~,j_t_15]=min(abs(tiempo-t_15));
+    [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_t_15,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
+    Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
+    [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_t_15,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
+    Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
+    Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
+    Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
+    plot(Z_tstop,Tempejez_tstop,'-r','LineWidth',2,'MarkerSize',6),grid on
+
+    t_25 = 25;
+    [~,j_t_25]=min(abs(tiempo-t_25));
+    [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_t_25,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
+    Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
+    [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_t_25,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
+    Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
+    Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
+    Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
+    plot(Z_tstop,Tempejez_tstop,'-g','LineWidth',2,'MarkerSize',6),grid on
+
+    [~,j_tstop]=min(abs(tiempo-tstop));
+    [TempejezOmega1_tstop, Fzp]=sp_eval(alpha(j_tstop,space.gnum{1}),space.sp_patch{1},geometry(1),ptsejez);
+    Z_tstop_Omega1=deal(squeeze(Fzp(2,:,:)));
+    [TempejezOmega2_tstop, Fzp]=sp_eval(alpha(j_tstop,space.gnum{2}),space.sp_patch{2},geometry(2),ptsejez);
+    Z_tstopOmega2=deal(squeeze(Fzp(2,:,:)));
+    Z_tstop=[Z_tstop_Omega1' Z_tstopOmega2'];
+    Tempejez_tstop=[TempejezOmega1_tstop TempejezOmega2_tstop];
+    plot(Z_tstop,Tempejez_tstop,'-b','LineWidth',2,'MarkerSize',6),grid on
+
+    legend('t=5seg', 't=10seg', 't=15seg', 't=25seg', 't=30seg')
+    hold off
     
-    %% Graficos de la Solucion 3D
+    %% Graficos de la Solucion Sobre todo Omega
     npoints=100;
     pts = {linspace(0, 1, npoints), linspace(0, 1, npoints)};
     
@@ -290,27 +267,13 @@ if show_figure == 0
     min_value_g = 100;
     max_value_g = 0;
     
-%     geometry_function_hande = @(rho, z) geometry_funct(z, z1, z2, z3);
-    % 1. Definir los colores exactos en formato RGB (valores de 0 a 1)
-%     azul      = [0.0, 0.4, 0.8]; % Lente
-%     carmelita = [0.7, 0.5, 0.3]; % Piel (marr?n/carmelita claro)
-%     amarillo  = [1.0, 0.9, 0.2]; % Grasa
-%     rojo      = [0.9, 0.3, 0.5]; % M?sculo
-% 
-%     % 2. Crear la matriz de la paleta (el orden debe coincidir con tus Ticks 0, 1, 2, 3)
-%     mi_paleta = [
-%         azul;        % Posici?n 0
-%         carmelita;   % Posici?n 1
-%         amarillo;    % Posici?n 2
-%         rojo         % Posici?n 3
-%     ];
-    for patch = 1:n_patch    
-%         j = 60;
+    for patch = 1:n_patch
         t_eval = 30;
         [~,j] = min(abs(tiempo-t_eval));
         [Taprox, F] = sp_eval (alpha(j,space.gnum{patch}), space.sp_patch{patch}, geometry(patch), pts);
         [Rho, Z]  = deal(squeeze(F(1,:,:)), squeeze(F(2,:,:)));
-%     % % % % %  Figura con la solucion calculada en un tiempo fijo % % % % %
+        
+        %% Figura 3D con la solucion calculada en un tiempo fijo
         min_value = min(Taprox);
         if length(min_value)>1
             min_value = min(min_value);
@@ -321,50 +284,24 @@ if show_figure == 0
         end
         min_value_g = min(min_value, min_value_g);
         max_value_g = max(max_value, max_value_g);    
-%         figure(600), hold on, grid off, view(3)
-%         surf(Rho, Z,  Taprox, 'EdgeColor', 'interp')
-%         title(['Approximated solution of Pennes equation in t= ', num2str(tiempo(j)), 'sec']) 
-%         zlabel('U')
-%         xlabel('\rho')
-%         ylabel('Z')
-%         colorbar('Ticks',linspace(min_value_g,max_value_g,6));
-%         hold off
 
-%         figure(602), hold on, grid on
-%         plot_3D_cylinder_1(Rho, Z, Taprox, theta, min_value_g, max_value_g, ['Temperatura para t = ', num2str(tiempo(j)), 'sec'],z1,z2,z3);
-%         title(['Superficie rotada para el timepo t=', num2str(tiempo(j)), 'sec']);
-%         %%% Grafico las curvas de los bordes
-%         x_rho = r*sin(0:0.001:pi/2);
-%         x_z = r*cos(0:0.001:pi/2);
-%         x_zero = zeros(1,length(x_rho));
-%         hold on;
-%         plot3(x_rho,x_zero,x_z, 'LineStyle', '--', 'LineWidth', 2, 'Color', 'w'); % 
-%         plot3(x_zero, -x_rho,x_z, 'LineStyle', '--', 'LineWidth', 2, 'Color', 'w'); % 
-% %         hold off
-%         ax = gca;
-%         ax.FontSize = 12;
-%         ax.FontWeight = 'bold';
-%         hold off
+        figure(602), hold on, grid on
+        plot_3D_cylinder_1(Rho, Z, Taprox, theta, min_value_g, max_value_g, ['Temperatura para t = ', num2str(tiempo(j)), 'sec'],z1,z2,z3);
+        title(['Superficie rotada para el timepo t=', num2str(tiempo(j)), 'sec']);
+        %% Grafico las curvas de los bordes
+        x_rho = r*sin(0:0.001:pi/2);
+        x_z = r*cos(0:0.001:pi/2);
+        x_zero = zeros(1,length(x_rho));
+        hold on;
+        plot3(x_rho,x_zero,x_z, 'LineStyle', '--', 'LineWidth', 2, 'Color', 'w'); % 
+        plot3(x_zero, -x_rho,x_z, 'LineStyle', '--', 'LineWidth', 2, 'Color', 'w'); % 
+
+        ax = gca;
+        ax.FontSize = 12;
+        ax.FontWeight = 'bold';
+        hold off
           
-          %%%%%%% Figura de la Intensidad Q de entrada
-%         figure(800), hold on
-%         ZZ = Qval(Rho,Z);
-% %         max_Q = max(max(ZZ))
-%         surf(Rho, Z, ZZ, 'EdgeColor', 'interp')
-%         colorbar
-%         title('Valor de la Intencidad Q de entrada.');
-%         hold off
-         
-        %%%%%%%%%%%%%%% Figura del Dominio con 3 capas         
-%         figure(801), hold on%, grid on, view(2)
-%         plot_3D_cylinder(Rho, Z, geometry_function_hande(Rho, Z), theta);
-%         colormap(mi_paleta);
-%         cb = colorbar;
-%         cb.TickLabels = {'lent','skin','fat','muscle'};
-%         cb.Ticks = [0.25, 1, 1.8, 2.6];
-%         grid on        
-%         hold off
-    %%%%%%%%%%%%% Figura 2D en el plano XZ %%%%%%%%%%%%%%%%%%
+        %% Figura 2D en el plano XZ
         figure(603), hold on,grid on
         surf(Rho, Z, Taprox,'EdgeColor', 'flat')
         surf(-Rho, Z, Taprox,'EdgeColor', 'flat')
@@ -377,34 +314,17 @@ if show_figure == 0
         hold off
           
     end
-
-%     line_N = 400;
-%     z_line = linspace(0, r, line_N);
-%     y_line = zeros(1, line_N);
-%     x_function = @(z_line) sqrt(r.^2-z_line.^2);
-%     %         (x,y)=(sqrt(R^2-z^2),0)
-%     t_line = 0.7071;
-%     figure(801), hold on
-%     plot3(x_function(z_line), y_line, z_line, '-k', 'LineWidth', 1.5)
-%     plot3(y_line, -x_function(z_line), z_line, '-k', 'LineWidth', 1.5)
-% %     plot3(-t_line.*x_function(z_line), t_line.*x_function(z_line), z_line, '-k', 'LineWidth', 1.5)
-%     hold off
-
- 
     
     %% Graficos de la Solucion a lo largo del Punto de Maximo Focal
-    %     npoints=800;
-    %     z_p = linspace(0,1, npoints);
-        pts_max_foco = {0, 0.8248};              % [x,z]= [0, 0.036322]  maximo focal
-        pts_max_foco_0p005 = {0.0984, 0.8266};    % [x,z] = [0.002, 0.036322]
-    %     max_value_g = 0;
-    % 
-        for j = 1:length(tiempo)
-            [Temp_max_foco(j), Fzp]=sp_eval(alpha(j,space.gnum{1}),space.sp_patch{1},geometry(1),pts_max_foco);
-            [Temp_max_foco_0p005(j), Fzp]=sp_eval(alpha(j,space.gnum{1}),space.sp_patch{1},geometry(1),pts_max_foco_0p005);
-        end
-        figure(),grid on, hold on
-        plot(tiempo,Temp_max_foco,'-r','LineWidth',2,'MarkerSize',6),grid on
-        plot(tiempo,Temp_max_foco_0p005,'-b','LineWidth',2,'MarkerSize',6),grid on
-        hold off
+    pts_max_foco = {0, 0.8248};              % [x,z]= [0, 0.036322]  maximo focal
+    pts_max_foco_0p005 = {0.0984, 0.8266};    % [x,z] = [0.002, 0.036322]
+    
+    for j = 1:length(tiempo)
+        [Temp_max_foco(j), Fzp]=sp_eval(alpha(j,space.gnum{1}),space.sp_patch{1},geometry(1),pts_max_foco);
+        [Temp_max_foco_0p005(j), Fzp]=sp_eval(alpha(j,space.gnum{1}),space.sp_patch{1},geometry(1),pts_max_foco_0p005);
+    end
+    figure(),grid on, hold on
+    plot(tiempo,Temp_max_foco,'-r','LineWidth',2,'MarkerSize',6),grid on
+    plot(tiempo,Temp_max_foco_0p005,'-b','LineWidth',2,'MarkerSize',6),grid on
+    hold off
 end
